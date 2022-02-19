@@ -1,6 +1,7 @@
 #pragma once
-#include "objects.h"
 #include <memory>
+#include "light.h"
+#include "objects.h"
 
 class scene
 {
@@ -8,11 +9,16 @@ public:
 	scene() {}
 	scene(const scene&) = default;
 	
+	//Add objects or lights
 	template<class obj, typename... T>
 	void add_elem(T&&... elems)
 	{
-		static_assert(std::is_base_of_v<object, obj>, "The class provided is not valid");
-		m_ObjectList.push_back(std::make_shared<obj>(std::forward<T>(elems)...));
+		static_assert(std::is_base_of_v<object, obj> || std::is_same_v<obj, light>, "The class provided is not valid");
+
+		if constexpr (std::is_base_of_v<object, obj>)
+			m_ObjectList.push_back(std::make_shared<obj>(std::forward<T>(elems)...));
+		else
+			m_Lights.emplace_back(std::forward<T>(elems)...);
 	}
 
 	void replace_with(const object_list& objs)
@@ -20,7 +26,8 @@ public:
 		m_ObjectList = objs;
 	}
 
-	const object_list get_objects() const { return m_ObjectList; }
+	const object_list& get_objects() const { return m_ObjectList; }
+	const std::vector<light>& get_lights() const { return m_Lights; }
 
 	static scene generate_random()
 	{
@@ -60,10 +67,14 @@ public:
 			}
 		}
 
+		//Add lights
+		ret.add_elem<light>(vec3(0.0f, 4.0f, 0.0f), vec3(1.0f, 1.0f, 1.0f));
+		ret.add_elem<light>(vec3(6.0f, 1.0f, 2.0f), vec3(1.0f, 0.0f, 1.0f));
 		
 		return ret;
 	}
 
 private:
 	object_list m_ObjectList;
+	std::vector<light> m_Lights;
 };
